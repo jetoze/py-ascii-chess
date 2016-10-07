@@ -142,6 +142,7 @@ class Pawn(Piece):
 		to_rank = to.rank()
 		rank_diff = to_rank - from_rank
 		if rank_diff == 0 or abs(rank_diff) > 2:
+			print "#1"
 			return False
 		# At this point we know that abs(rank_diff) is 1 or 2
 		file_diff = to.file() - start.file()
@@ -152,9 +153,9 @@ class Pawn(Piece):
 			if not board.is_empty(to):
 				return False
 			if self.is_white():
-				return (file_diff == 1) or (file_diff == 2 and from_rank == 2)
+				return (rank_diff == 1) or (rank_diff == 2 and from_rank == 2)
 			else:
-				return (file_diff == -1) or (file_diff == -2 and from_rank == 7)
+				return (rank_diff == -1) or (rank_diff == -2 and from_rank == 7)
 		else:
 			# This represents a (potential) capturing move
 			if board.is_empty(to):
@@ -402,18 +403,26 @@ class Game:
 
 	def __init__(self):
 		self._board = Board.initial_position()
-		self._half_move = 0
+		self._half_move = 1
 
 	def loop(self):
+		print
+		self._board.dump()
 		while True:
-			self._board.dump()
-			input = raw_input("\n\nEnter a move (q to quit): ")
-			if input == 'q':
-				break
-			self._half_move += 1
-			move = Move.parse(input)
-			expected_color = WHITE if (self._half_move % 2) else BLACK
-			move.update_board(self._board, expected_color)
+			try:
+				input = raw_input("\nEnter a move ('q' to quit, 'b' to print board): ")
+				if input == 'q':
+					break
+				if input == 'b':
+					self._board.dump()
+					continue
+				move = Move.parse(input)
+				expected_color = WHITE if (self._half_move % 2) else BLACK
+				move.update_board(self._board, expected_color)
+				self._half_move += 1
+				self._board.dump()
+			except ValueError as ve:
+				print str(ve)
 
 if __name__ == '__main__':
 	game = Game()
