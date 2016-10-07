@@ -360,6 +360,10 @@ class Board:
 		"""Checks if a Rook of the given color is standing on the given square."""
 		return self.is_piece_of_type_and_color(square, Rook, color)
 
+	def is_pawn(self, square, color):
+		"""Checks if a pawn of the given color is standing on the given square."""
+		return self.is_piece_of_type_and_color(square, Pawn, color)
+
 	def collect_pieces_of_type_and_color(self, piece_type, color):
 		"""Returns a list of the pieces of the given type and color currently on the board.
 		Each entry in the returned list is a tuple: the first is the Square, the second the Piece."""
@@ -407,12 +411,24 @@ class Board:
 			t = Square(parts[1].strip())
 			return Move(f, t)
 		elif "x" in input:
-			# TODO: Add support for pawn captures of the form 'fxe6'
 			ind = input.index("x")
 			move = None
 			if ind == 1:
-				# 'Nxe5'. Can be handled as 'Ne5'.
-				move = self.parse_move(input[:1] + input[2:], expected_color)
+				if input[:1] in PIECE_TYPES:
+					# 'Nxe5'. Can be handled as 'Ne5'.
+					move = self.parse_move(input[:1] + input[2:], expected_color)
+				else:
+					# Pawn capture, e.g. 'fxe6'
+					# TODO: Add support for en passant
+					target_square = Square(input[2:])
+					pawn_file = input[:1]
+					pawn_rank = target_square.rank() - 1 if expected_color == WHITE else target_square.rank() + 1
+					from_square = Square.fromFileAndRank(pawn_file, pawn_rank)
+					if self.is_pawn(from_square, expected_color):
+						pawn = self.get_piece(from_square)
+						if pawn.is_valid_move(self, from_square, target_square):
+							return Move(from_square, target_square)
+					raise InvalidMoveError("No {} pawn can capture on {}.".format(expected_color, target_square))
 			elif ind == 2:
 				# 'e4xe5'. Can be handled as 'e4 e5'.
 				move = self.parse_move(input.replace("x", " "), expected_color)
