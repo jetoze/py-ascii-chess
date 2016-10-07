@@ -33,7 +33,7 @@ class Square:
 
 	def rank(self):
 		"""Returns the rank, as a number between 1 and 8."""
-		return self._rank;
+		return self._rank
 
 	def file(self):
 		"""Returns the file, as a number between 1 and 8."""
@@ -136,7 +136,7 @@ class Pawn(Piece):
 			return True
 		from_rank = start.rank()
 		to_rank = to.rank()
-		rank_diff = to_rank - from_rank;
+		rank_diff = to_rank - from_rank
 		if rank_diff == 0 or abs(rank_diff) > 2:
 			return False
 		# At this point we know that abs(rank_diff) is 1 or 2
@@ -244,7 +244,7 @@ class Bishop(Piece):
 			return None
 		if abs(file_diff) != abs(rank_diff):
 			return None
-		return diagonal_move_generator(start, to);
+		return diagonal_move_generator(start, to)
 
 
 class Queen(Piece):
