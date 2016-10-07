@@ -354,6 +354,41 @@ class Board:
 			print f.upper(),
 
 
+class Move:
+
+	def __init__(self, from_square, to_square):
+		self._from = from_square
+		self._to = to_square
+
+	@staticmethod
+	def parse(input):
+		parts = input.split("-")
+		f = Square(parts[0].strip())
+		t = Square(parts[1].strip())
+		return Move(f, t)
+
+	def __str__(self):
+		return str(self._from) + "-" + str(self._to)
+
+	def __repr__(self):
+		return "Move(Square('{0}'), Square('{1}'))".format(self._from, self._to)
+
+
+class Game:
+
+	def __init__(self):
+		self._board = Board.initial_position()
+		self._half_move = 0
+
+	def loop(self):
+		while True:
+			self._board.dump()
+			input = raw_input("\n\nEnter a move (q to quit): ")
+			if input == 'q':
+				break
+			move = Move.parse(input)
+			pass
+
 if __name__ == '__main__':
-	board = Board.initial_position()
-	board.dump()
+	game = Game()
+	game.loop()
