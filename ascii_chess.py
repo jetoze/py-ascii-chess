@@ -279,6 +279,7 @@ class King(Piece):
 	def move_generator(self, start, to):
 		return None
 
+
 class Board:
 
 	def __init__(self):
@@ -332,7 +333,13 @@ class Board:
 		self.add_piece(King(BLACK), Square('e8'))
 
 	def dump(self):
+		print "   ",
+		for f in FILES:
+			print f.upper(),
+		print "    "
+		print "-" * 23
 		for r in range(8, 0, -1):
+			print str(r) + " |",
 			for f in FILES:
 				sq = Square.fromFileAndRank(f, r)
 				if self.is_empty(sq):
@@ -340,4 +347,13 @@ class Board:
 				else:
 					p = self.get_piece(sq)
 					print p.abbrev(),
-			print '\n'
+			print "| " + str(r)
+		print "-" * 23
+		print "   ",
+		for f in FILES:
+			print f.upper(),
+
+
+if __name__ == '__main__':
+	board = Board.initial_position()
+	board.dump()
