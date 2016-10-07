@@ -528,8 +528,16 @@ class Move:
 		# At this point we know a pawn was moved two steps forward.
 		# Pawns of the opposite color on each side of the target square
 		# can now capture en-passant
-		# TODO: Implement me.
-		pass
+		target_rank = self._to.rank() - 1 if piece.is_white() else self._to.rank() + 1
+		target_square = Square.fromFileAndRank(self._to.file(), target_rank)
+		sides = [f for f in (self._to.file() - 1, self._to.file() + 1) if (f >= 1 and f <= 8)]
+		for f in sides:
+			sq = Square.fromFileAndRank(f, self._to.rank())
+			opposite_color = BLACK if piece.is_white() else WHITE
+			if board.is_pawn(sq, opposite_color):
+				p = board.get_piece(sq)
+				p.set_en_passant_square(target_square)
+
 
 	def get_piece(self, board, expected_color):
 		if board.is_empty(self._from):
