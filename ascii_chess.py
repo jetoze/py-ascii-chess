@@ -85,6 +85,7 @@ class Piece:
 		self._abbrev = abbrev
 		self._value = value
 		self._color = color
+		self._has_moved = False
 
 	def __str__(self):
 		return self.abbrev()
@@ -104,6 +105,13 @@ class Piece:
 
 	def is_same_color(self, other):
 		return self._color == other._color
+
+	def set_has_moved(self, moved = True):
+		self._has_moved = moved
+
+	def has_moved(self):
+		"""Checks if this piece has moved."""
+		return self._has_moved
 
 	@abstractmethod
 	def move_generator(self, board, start, to):
@@ -458,6 +466,7 @@ class Move:
 			raise ValueError("Illegal move: " + str(self))
 		board.remove_piece(self._from)
 		board.add_piece(piece, self._to)
+		piece.set_has_moved()
 
 	def get_piece(self, board, expected_color):
 		if board.is_empty(self._from):
