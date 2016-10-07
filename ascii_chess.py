@@ -153,9 +153,11 @@ class Pawn(Piece):
 			if not board.is_empty(to):
 				return False
 			if self.is_white():
-				return (rank_diff == 1) or (rank_diff == 2 and from_rank == 2)
+				return (rank_diff == 1) or (rank_diff == 2 and from_rank == 2 and 
+					board.is_empty(Square.fromFileAndRank(start.file(), 3))) 
 			else:
-				return (rank_diff == -1) or (rank_diff == -2 and from_rank == 7)
+				return (rank_diff == -1) or (rank_diff == -2 and from_rank == 7 and 
+					board.is_empty(Square.fromFileAndRank(start.file(), 6)))
 		else:
 			# This represents a (potential) capturing move
 			if board.is_empty(to):
