@@ -9,6 +9,10 @@ BLACK = "black"
 FILES = [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' ]
 RANKS = [ 1, 2, 3, 4, 5, 6, 7, 8 ]
 
+
+class InvalidMoveError(Exception):
+	pass
+
 class Square:
 
 	def __init__(self, coordinate):
@@ -289,18 +293,15 @@ class King(Piece):
 		if abs(to.file() - start.file()) <= 1 and abs(to.rank() - start.rank()) <= 1:
 			return True
 		# Check castling
+		rank = 1 if self.is_white() else 8
+		if not ((start.rank() == rank and to.rank() == rank) and (start.file() == 5 and (to.file() == 1 or to.file() == 8))):
+			return False
 		if self._has_moved() or board.is_empty(to):
 			return False
 		other_piece = board.get_piece(to)
 		if not isinstance(other_piece, Rook) or other_piece.has_moved():
 			return False
-		if self.is_white():
-			if start == Square('e1') and (to == Square('h1') or to == Square('a1')):
-				return self.is_path_clear_for_castling(board, 1, to.file())
-		else:
-			if start == Square('e8') and (to == Square('h8') or to == Square('a8')):
-				return self.is_path_clear_for_castling(board, 8, to.file())
-		return False
+		return self.is_path_clear_for_castling(board, rank, to.file())
 
 	def is_path_clear_for_castling(self, board, rank, end_file):
 		start_file = 5
@@ -412,9 +413,9 @@ class Board:
 				# 'e4xe5'. Can be handled as 'e4 e5'.
 				move = self.parse_move(input.replace("x", " "), expected_color)
 			if move is None:
-				raise ValueError("Invalid move notation: " + input)
+				raise InvalidMoveError("Invalid move notation: " + input)
 			if not move.is_capture(self):
-				raise ValueError("Invalid move. Not a capture.")
+				raise InvalidMoveError("Invalid move. Not a capture.")
 			return move
 		else:
 			if len(input) == 2:
@@ -428,7 +429,8 @@ class Board:
 				pieces = self.collect_pieces_of_type_and_color(piece_type, expected_color)
 				candidates = [p for p in pieces if p[1].is_valid_move(self, p[0], to_square)]
 				if len(candidates) == 0:
-					raise ValueError("Invalid move. No {0} {1} can move to {2}".format(expected_color, piece_type.__name__, to_square))
+					raise InvalidMoveError("Invalid move. No {0} {1} can move to {2}".format(
+						expected_color, piece_type.__name__, to_square))
 				elif len(candidates) == 1:
 					# The first [0] to get the single candidate, which is a tuple.
 					# The second [0] to get the first item in the tuple, which is the Square.
@@ -436,13 +438,14 @@ class Board:
 					return Move(from_square, to_square)
 				else:
 					# TODO: Add support for moves like 'Ngf4', and 'Ng2f4'.
-					raise ValueError("Ambigous move. More than one {0} {1} can move to {2}".format(expected_color, piece_type.__name__, to_square))
+					raise InvalidMoveError("Ambigous move. More than one {0} {1} can move to {2}".format(
+						expected_color, piece_type.__name__, to_square))
 			else:
 				if len(input) == 4:
 					# Pawn move of the form 'e2e4'. We can handle it as 'e2 e4'
 					return self.parse_move(input[:2] + " " + input[2:], expected_color)
 				else:
-					raise ValueError("Invalid move notation: " + input)
+					raise InvalidMoveError("Invalid move notation: " + input)
 
 	def dump(self):
 		print "   ",
@@ -526,6 +529,8 @@ class Game:
 				self._board.dump()
 			except ValueError as ve:
 				print str(ve)
+			except InvalidMoveError as ime:
+				print str(ime)
 
 if __name__ == '__main__':
 	game = Game()
