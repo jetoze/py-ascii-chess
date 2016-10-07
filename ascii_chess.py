@@ -363,7 +363,17 @@ class Board:
 			t = Square(parts[1].strip())
 			return Move(f, t)
 		elif "x" in input:
-			pass
+			# FIXME: The following is not correct. We also must check that the target square
+			# contains a piece of the opposite color (capture).
+			ind = input.index("x")
+			if ind == 1:
+				# 'Nxe5'. Can be handled as 'Ne5'.
+				return self.parse_move(input[:1] + input[2:], expected_color)
+			elif ind == 2:
+				# 'e4xe5'. Can be handled as 'e4 e5'.
+				return self.parse_move(input.replace("x", " "), expected_color)
+			else:
+				raise ValueError("Invalid move notation: " + input)
 		else:
 			c = input[:1]
 			if c in PIECE_TYPES:
