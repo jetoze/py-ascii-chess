@@ -95,6 +95,10 @@ class Piece:
 		else:
 			return self._abbrev.lower()
 
+	def get_color(self):
+		"""Returns the color of this piece (WHITE or BLACK)."""
+		return self._color
+
 	def is_white(self):
 		return self._color == WHITE
 
@@ -299,6 +303,10 @@ class Board:
 		"""Returns the piece currently occupying the given square."""
 		return self._squares[square]
 
+	def remove_piece(self, s):
+		"""Removes the piece from square s."""
+		del self._squares[s]
+
 	def is_empty(self, square):
 		"""Checks if the given square is empty."""
 		return square not in self._squares
@@ -343,7 +351,7 @@ class Board:
 			for f in FILES:
 				sq = Square.fromFileAndRank(f, r)
 				if self.is_empty(sq):
-					print 'o',
+					print '.',
 				else:
 					p = self.get_piece(sq)
 					print p.abbrev(),
@@ -367,6 +375,22 @@ class Move:
 		t = Square(parts[1].strip())
 		return Move(f, t)
 
+	def update_board(self, board, expected_color):
+		piece = self.get_piece(board, expected_color)
+		if not piece.is_valid_move(board, self._from, self._to):
+			raise ValueError("Illegal move: " + str(self))
+		board.remove_piece(self._from)
+		board.add_piece(piece, self._to)
+
+
+	def get_piece(self, board, expected_color):
+		if board.is_empty(self._from):
+			raise ValueError("Invalid move. No piece at " + str(self._from))
+		p = board.get_piece(self._from)
+		if not p.get_color() == expected_color:
+			raise ValueError("Invalid move. The piece at " + str(self._from) + " is the wrong color.")
+		return p
+
 	def __str__(self):
 		return str(self._from) + "-" + str(self._to)
 
@@ -386,8 +410,10 @@ class Game:
 			input = raw_input("\n\nEnter a move (q to quit): ")
 			if input == 'q':
 				break
+			self._half_move += 1
 			move = Move.parse(input)
-			pass
+			expected_color = WHITE if (self._half_move % 2) else BLACK
+			move.update_board(self._board, expected_color)
 
 if __name__ == '__main__':
 	game = Game()
