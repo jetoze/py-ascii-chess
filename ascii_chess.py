@@ -286,7 +286,32 @@ class King(Piece):
 			return False
 		if not board.is_empty(to):
 			return False
-		return abs(to.file() - start.file()) <= 1 and abs(to.rank() - start.rank()) <= 1
+		if abs(to.file() - start.file()) <= 1 and abs(to.rank() - start.rank()) <= 1:
+			return True
+		# Check castling
+		if self._has_moved() or board.is_empty(to):
+			return False
+		other_piece = board.get_piece(to)
+		if not isinstance(other_piece, Rook) or other_piece.has_moved():
+			return False
+		if self.is_white():
+			if start == Square('e1') and (to == Square('h1') or to == Square('a1')):
+				return self.is_path_clear_for_castling(board, 1, to.file())
+		else:
+			if start == Square('e8') and (to == Square('h8') or to == Square('a8')):
+				return self.is_path_clear_for_castling(board, 8, to.file())
+		return False
+
+	def is_path_clear_for_castling(self, board, rank, end_file):
+		start_file = 5
+		step = 1 if end_file > start_file else -1
+		for f in range(start_file + step, end_file, step):
+			sq = Square.fromFileAndRank(f, rank)
+			# TODO: Check if the square is under attack.
+			if not board.is_empty(sq):
+				return False
+		return True
+
 
 	def move_generator(self, start, to):
 		return None
