@@ -150,7 +150,6 @@ class Pawn(Piece):
 		to_rank = to.rank()
 		rank_diff = to_rank - from_rank
 		if rank_diff == 0 or abs(rank_diff) > 2:
-			print "#1"
 			return False
 		# At this point we know that abs(rank_diff) is 1 or 2
 		file_diff = to.file() - start.file()
@@ -387,6 +386,10 @@ class Board:
 				raise ValueError("Invalid move. Not a capture.")
 			return move
 		else:
+			if len(input) == 2:
+				# Input of type 'e4', i.e. a pawn move with only the target square given.
+				# Treat this as 'Pe4', i.e. the same way we would a move like 'Nc3'.
+				input = 'P' + input
 			c = input[:1]
 			if c in PIECE_TYPES:
 				to_square = Square(input[1:])
@@ -407,28 +410,6 @@ class Board:
 				if len(input) == 4:
 					# Pawn move of the form 'e2e4'. We can handle it as 'e2 e4'
 					return self.parse_move(input[:2] + " " + input[2:], expected_color)
-				elif len(input) == 2:
-					# Pawn move of the form 'e5', i.e. the input is just the target square, or "e4e5".
-					# We need to figure out which pawn it is.
-					to_square = Square(input)
-					# TODO: Refactor this mess. Identical code structure for WHITE and BLACK.
-					if expected_color == WHITE:
-						from_square = Square.fromFileAndRank(to_square.file(), to_square.rank() - 1)
-						if self.is_pawn(from_square, WHITE):
-							return Move(from_square, to_square)
-						if to_square.rank() == 4 and self.is_empty(Square.fromFileAndRank(to_square.file(), 3)):
-							from_square = Square.fromFileAndRank(to_square.file(), 2)
-							if self.is_pawn(from_square, WHITE):
-								return Move(from_square, to_square)
-					else:
-						from_square = Square.fromFileAndRank(to_square.file(), to_square.rank() + 1)
-						if self.is_pawn(from_square, BLACK):
-							return Move(from_square, to_square)
-						if to_square.rank() == 5 and self.is_empty(Square.fromFileAndRank(to_square.file(), 6)):
-							from_square = Square.fromFileAndRank(to_square.file(), 7)
-							if self.is_pawn(from_square, BLACK):
-								return Move(from_square, to_square)
-					raise ValueError("Invalid move. No {0} pawn can reach {1}".format(expected_color, input))
 				else:
 					raise ValueError("Invalid move notation: " + input)
 
