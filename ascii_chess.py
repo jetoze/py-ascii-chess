@@ -565,7 +565,7 @@ class Game:
 			except StopError:
 				break
 
-	def handle_input(self, input, interactive = True):
+	def handle_input(self, input, interactive = True, print_board = True):
 			if input == 'q':
 				if interactive:
 					raise StopError
@@ -579,13 +579,17 @@ class Game:
 						return
 					with open(file_name) as f:
 						for line in (ln.strip() for ln in f if len(ln)):
-							self.handle_input(line, False)
+							print line,
+							self.handle_input(line, False, False)
+					print '\n'
+					self._board.dump()
 			else:
 				expected_color = WHITE if (self._half_move % 2) else BLACK
 				move = self._board.parse_move(input, expected_color)
 				move.update_board(self._board, expected_color)
 				self._half_move += 1
-				self._board.dump()
+				if print_board:
+					self._board.dump()
 
 
 if __name__ == '__main__':
