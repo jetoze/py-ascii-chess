@@ -580,7 +580,12 @@ class Game:
 					with open(file_name) as f:
 						for line in (ln.strip() for ln in f if len(ln)):
 							print line,
-							self.handle_input(line, False, False)
+							if " " in line:
+								moves = line.split(" ")
+								self.handle_input(moves[0], False, False)
+								self.handle_input(moves[1], False, False)
+							else:
+								self.handle_input(line, False, False)
 					print '\n'
 					self._board.dump()
 			else:
