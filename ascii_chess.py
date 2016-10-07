@@ -393,27 +393,33 @@ class Board:
 				else:
 					raise ValueError("Ambigous move. More than one {0} {1} can move to {2}".format(expected_color, piece_type.__name__, to_square))
 			else:
-				# Pawn move of the form 'e5', i.e. the input is just the target square.
-				# We need to figure out which pawn it is.
-				to_square = Square(input)
-				# TODO: Refactor this mess. Identical code structure.
-				if expected_color == WHITE:
-					from_square = Square.fromFileAndRank(to_square.file(), to_square.rank() - 1)
-					if self.is_pawn(from_square, WHITE):
-						return Move(from_square, to_square)
-					if to_square.rank() == 4 and self.is_empty(Square.fromFileAndRank(to_square.file(), to_square.rank() - 1)):
-						from_square = Square.fromFileAndRank(to_square.file(), to_square.rank() - 2)
+				if len(input) == 4:
+					# Pawn move of the form 'e2e4'. We can handle it as 'e2 e4'
+					return self.parse_move(input[:2] + " " + input[2:], expected_color)
+				elif len(input) == 2:
+					# Pawn move of the form 'e5', i.e. the input is just the target square, or "e4e5".
+					# We need to figure out which pawn it is.
+					to_square = Square(input)
+					# TODO: Refactor this mess. Identical code structure.
+					if expected_color == WHITE:
+						from_square = Square.fromFileAndRank(to_square.file(), to_square.rank() - 1)
 						if self.is_pawn(from_square, WHITE):
 							return Move(from_square, to_square)
-				else:
-					from_square = Square.fromFileAndRank(to_square.file(), to_square.rank() + 1)
-					if self.is_pawn(from_square, BLACK):
-						return Move(from_square, to_square)
-					if to_square.rank() == 5 and self.is_empty(Square.fromFileAndRank(to_square.file(), to_square.rank() + 1)):
-						from_square = Square.fromFileAndRank(to_square.file(), to_square.rank() + 2)
+						if to_square.rank() == 4 and self.is_empty(Square.fromFileAndRank(to_square.file(), to_square.rank() - 1)):
+							from_square = Square.fromFileAndRank(to_square.file(), to_square.rank() - 2)
+							if self.is_pawn(from_square, WHITE):
+								return Move(from_square, to_square)
+					else:
+						from_square = Square.fromFileAndRank(to_square.file(), to_square.rank() + 1)
 						if self.is_pawn(from_square, BLACK):
 							return Move(from_square, to_square)
-				raise ValueError("Invalid move. No pawn can reach " + input)
+						if to_square.rank() == 5 and self.is_empty(Square.fromFileAndRank(to_square.file(), to_square.rank() + 1)):
+							from_square = Square.fromFileAndRank(to_square.file(), to_square.rank() + 2)
+							if self.is_pawn(from_square, BLACK):
+								return Move(from_square, to_square)
+					raise ValueError("Invalid move. No {0} pawn can reach {1}".format(expected_color, input))
+				else:
+					raise ValueError("Invalid move notation: " + input)
 
 	def dump(self):
 		print "   ",
