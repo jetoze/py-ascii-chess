@@ -396,9 +396,9 @@ class Board:
 
 	def parse_move(self, input, expected_color):
 		# FIXME: This method is in dire need of refactoring!
-		if input == "O-O":
+		if input == "0-0" or input == "O-O":
 			return Castling.king_side(expected_color)
-		elif input == "O-O-O":
+		elif input == "0-0-0" or input == "O-O-O":
 			return Castling.queen_side(expected_color)
 		input = input.replace("-", " ") # So that "e4-e5" is handled the same as "e4 e5"
 		if " " in input:
@@ -526,8 +526,8 @@ class Castling(Move):
 			king = board.get_piece(self._from)
 			if king.is_valid_move(board, self._from, self._to):
 				rook = board.get_piece(self._to)
-				new_king_file = 7 if self._to.file() == 8 else 2
-				new_rook_file = 6 if new_king_file == 7 else 3
+				new_king_file = 7 if self._to.file() == 8 else 3
+				new_rook_file = 6 if new_king_file == 7 else 4
 				rank = self._from.rank()
 				board.add_piece(king, Square.fromFileAndRank(new_king_file, rank))
 				board.add_piece(rook, Square.fromFileAndRank(new_rook_file, rank))
