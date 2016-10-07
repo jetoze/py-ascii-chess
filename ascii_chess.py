@@ -288,18 +288,16 @@ class King(Piece):
 	def is_valid_move(self, board, start, to):
 		if start == to:
 			return False
-		if not board.is_empty(to):
-			return False
 		if abs(to.file() - start.file()) <= 1 and abs(to.rank() - start.rank()) <= 1:
-			return True
+			return board.is_empty(to)
 		# Check castling
 		rank = 1 if self.is_white() else 8
 		if not ((start.rank() == rank and to.rank() == rank) and (start.file() == 5 and (to.file() == 1 or to.file() == 8))):
 			return False
-		if self._has_moved() or board.is_empty(to):
+		if self.has_moved() or not board.is_rook(to, self.get_color()):
 			return False
-		other_piece = board.get_piece(to)
-		if not isinstance(other_piece, Rook) or other_piece.has_moved():
+		rook = board.get_piece(to)
+		if rook.has_moved():
 			return False
 		return self.is_path_clear_for_castling(board, rank, to.file())
 
@@ -533,8 +531,15 @@ class Castling(Move):
 				rank = self._from.rank()
 				board.add_piece(king, Square.fromFileAndRank(new_king_file, rank))
 				board.add_piece(rook, Square.fromFileAndRank(new_rook_file, rank))
+				board.remove_piece(self._from)
+				board.remove_piece(self._to)
 				king.set_has_moved()
 				rook.set_has_moved()
+			else:
+				raise InvalidMoveError("{} castling is not allowed for {}.".format(
+					"King-side" if self._to.file() == 8 else "Queen-side", expected_color))
+		else:
+			raise InvalidMoveError("Illegal move. The {} King is not standing on {}.".format(expected_color, self._from))
 
 
 class Game:
