@@ -16,7 +16,7 @@ class Square:
 		if not file in FILES:
 			err = "Not a valid file: '{0}' (requires 'a' to 'h')".format(file)
 			raise ValueError(err)
-		rank = int(coordinate[1:])
+		rank = int(coordinate[1:].strip())
 		if not rank in RANKS:
 			err = "Not a valid rank: {0} (requires 1 to 8)".format(rank)
 			raise ValueError(err)
@@ -285,6 +285,8 @@ class King(Piece):
 		return None
 
 
+PIECE_TYPES = {'K': King, 'Q': Queen, 'R': Rook, 'B': Bishop, 'N': Knight, 'P': Pawn}
+
 class Board:
 
 	def __init__(self):
@@ -311,6 +313,16 @@ class Board:
 	def is_empty(self, square):
 		"""Checks if the given square is empty."""
 		return square not in self._squares
+
+	def is_pawn(self, square, color):
+		"""Checks if there is a pawn of the given color standing on the given square."""
+		if self.is_empty(square):
+			return False
+		p = self.get_piece(square)
+		return isinstance(p, Pawn) and p.get_color() == color
+
+	def collect_pieces_of_type_and_color(self, piece_type, color):
+		return [i for i in self._squares.iteritems() if isinstance(i[1], piece_type) and i[1].get_color() == color]
 
 	def setup_initial_position(self):
 		"""Creates a board with the initial position for a game of chess."""
@@ -341,6 +353,51 @@ class Board:
 		self.add_piece(King(WHITE), Square('e1'))
 		self.add_piece(King(BLACK), Square('e8'))
 
+	def parse_move(self, input, expected_color):
+		if "-" in input:
+			parts = input.split("-")
+			f = Square(parts[0].strip())
+			t = Square(parts[1].strip())
+			return Move(f, t)
+		elif "x" in input:
+			pass
+		else:
+			c = input[:1]
+			if c in PIECE_TYPES:
+				to_square = Square(input[1:])
+				piece_type = PIECE_TYPES[c]
+				pieces = self.collect_pieces_of_type_and_color(piece_type, expected_color)
+				candidates = [p for p in pieces if p[1].is_valid_move(self, p[0], to_square)]
+				if len(candidates) == 0:
+					raise ValueError("Invalid move. No {0} {1} can move to {2}".format(expected_color, piece_type.__name__, to_square))
+				elif len(candidates) == 1:
+					from_square = candidates[0][0]
+					return Move(from_square, to_square)
+				else:
+					raise ValueError("Ambigous move. More than one {0} {1} can move to {2}".format(expected_color, piece_type.__name__, to_square))
+			else:
+				# Pawn move of the form 'e5', i.e. the input is just the target square.
+				# We need to figure out which pawn it is.
+				to_square = Square(input)
+				# TODO: Refactor this mess. Identical code structure.
+				if expected_color == WHITE:
+					from_square = Square.fromFileAndRank(to_square.file(), to_square.rank() - 1)
+					if self.is_pawn(from_square, WHITE):
+						return Move(from_square, to_square)
+					if to_square.rank() == 4 and self.is_empty(Square.fromFileAndRank(to_square.file(), to_square.rank() - 1)):
+						from_square = Square.fromFileAndRank(to_square.file(), to_square.rank() - 2)
+						if self.is_pawn(from_square, WHITE):
+							return Move(from_square, to_square)
+				else:
+					from_square = Square.fromFileAndRank(to_square.file(), to_square.rank() + 1)
+					if self.is_pawn(from_square, BLACK):
+						return Move(from_square, to_square)
+					if to_square.rank() == 5 and self.is_empty(Square.fromFileAndRank(to_square.file(), to_square.rank() + 1)):
+						from_square = Square.fromFileAndRank(to_square.file(), to_square.rank() + 2)
+						if self.is_pawn(from_square, BLACK):
+							return Move(from_square, to_square)
+				raise ValueError("Invalid move. No pawn can reach " + input)
+
 	def dump(self):
 		print "   ",
 		for f in FILES:
@@ -368,13 +425,6 @@ class Move:
 	def __init__(self, from_square, to_square):
 		self._from = from_square
 		self._to = to_square
-
-	@staticmethod
-	def parse(input):
-		parts = input.split("-")
-		f = Square(parts[0].strip())
-		t = Square(parts[1].strip())
-		return Move(f, t)
 
 	def update_board(self, board, expected_color):
 		piece = self.get_piece(board, expected_color)
@@ -416,8 +466,8 @@ class Game:
 				if input == 'b':
 					self._board.dump()
 					continue
-				move = Move.parse(input)
 				expected_color = WHITE if (self._half_move % 2) else BLACK
+				move = self._board.parse_move(input, expected_color)
 				move.update_board(self._board, expected_color)
 				self._half_move += 1
 				self._board.dump()
