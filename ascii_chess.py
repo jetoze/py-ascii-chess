@@ -366,6 +366,10 @@ class Board:
 		"""Checks if a pawn of the given color is standing on the given square."""
 		return self.is_piece_of_type_and_color(square, Pawn, color)
 
+	def is_any_pawn(self, square):
+		"""Checks if a pawn of any color is standing on the given square."""
+		return not self.is_empty(square) and isinstance(self.get_piece(square), Pawn)
+
 	def collect_pieces_of_type_and_color(self, piece_type, color):
 		"""Returns a list of the pieces of the given type and color currently on the board.
 		Each entry in the returned list is a tuple: the first is the Square, the second the Piece."""
@@ -514,12 +518,30 @@ class Move:
 		piece = self.get_piece(board, expected_color)
 		if not piece.is_valid_move(board, self._from, self._to):
 			raise ValueError("Illegal move: " + str(self))
+		self.check_en_passant(board, piece)
 		board.remove_piece(self._from)
 		board.add_piece(piece, self._to)
-		self.check_en_passant(board, piece)
+		self.update_en_passant_squares(board, piece)
 		piece.set_has_moved()
 
+	def is_en_passant(self, board):
+		# XXX: It would be nicer to use a sub-class for en-passant, just like we do for
+		# castling. At the moment the parsing logic does not support that (easily) though.
+		# For now we identify an en-passant move as a pawn move to an empty square of 
+		# a neighboring file.
+		return board.is_any_pawn(self._from) and board.is_empty(self._to) and (self._from.file() != self._to.file())
+
 	def check_en_passant(self, board, piece):
+		"""Checks if this move was an en-passant capture, in which case we must clear the square
+		of the captured piece."""
+		if self.is_en_passant(board):
+			target_rank = self._to.rank() - 1 if piece.is_white() else self._to.rank() + 1
+			target_square = Square.fromFileAndRank(self._to.file(), target_rank)
+			board.remove_piece(target_square)
+
+	def update_en_passant_squares(self, board, piece):
+		"""Updates the en-passant property of all remaining pawns on the board, so that we can recognize
+		an en-passant in the next move."""
 		board.clear_en_passant_squares()
 		if not isinstance(piece, Pawn):
 			return
@@ -548,6 +570,8 @@ class Move:
 		return p
 
 	def is_capture(self, board):
+		if self.is_en_passant():
+			return True
 		if board.is_empty(self._from) or board.is_empty(self._to):
 			return False
 		p1 = board.get_piece(self._from)
