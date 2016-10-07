@@ -347,12 +347,20 @@ class Board:
 		"""Checks if the given square is empty."""
 		return square not in self._squares
 
-	def is_pawn(self, square, color):
-		"""Checks if there is a pawn of the given color standing on the given square."""
+	def is_piece_of_type_and_color(self, square, piece_type, color):
+		"""Checks if there is a piece of the given type and color standing on the given square."""
 		if self.is_empty(square):
 			return False
 		p = self.get_piece(square)
-		return isinstance(p, Pawn) and p.get_color() == color
+		return isinstance(p, piece_type) and p.get_color() == color
+
+	def is_king(self, square, color):
+		"""Checks if a King of the given color is standing on the given square."""
+		return self.is_piece_of_type_and_color(square, King, color)
+
+	def is_rook(self, square, color):
+		"""Checks if a Rook of the given color is standing on the given square."""
+		return self.is_piece_of_type_and_color(square, Rook, color)
 
 	def collect_pieces_of_type_and_color(self, piece_type, color):
 		"""Returns a list of the pieces of the given type and color currently on the board.
@@ -390,14 +398,12 @@ class Board:
 
 	def parse_move(self, input, expected_color):
 		# FIXME: This method is in dire need of refactoring!
-		input = input.replace("-", " ") # So that "e4-e5" is handled the same as "e4 e5"
 		if input == "O-O":
-			# TODO: Castle short
-			pass
+			return Castling.king_side(expected_color)
 		elif input == "O-O-O":
-			# TODO: Castle long
-			pass
-		elif " " in input:
+			return Castling.queen_side(expected_color)
+		input = input.replace("-", " ") # So that "e4-e5" is handled the same as "e4 e5"
+		if " " in input:
 			parts = input.split(" ")
 			f = Square(parts[0].strip())
 			t = Square(parts[1].strip())
@@ -503,6 +509,32 @@ class Move:
 
 	def __repr__(self):
 		return "Move(Square('{0}'), Square('{1}'))".format(self._from, self._to)
+
+
+class Castling(Move):
+
+	@staticmethod
+	def king_side(color):
+		rank = 1 if color == WHITE else 8
+		return Castling(Square.fromFileAndRank(5, rank), Square.fromFileAndRank(8, rank))
+
+	@staticmethod
+	def queen_side(color):
+		rank = 1 if color == WHITE else 8
+		return Castling(Square.fromFileAndRank(5, rank), Square.fromFileAndRank(1, rank))
+	
+	def update_board(self, board, expected_color):
+		if board.is_king(self._from, expected_color):
+			king = board.get_piece(self._from)
+			if king.is_valid_move(board, self._from, self._to):
+				rook = board.get_piece(self._to)
+				new_king_file = 7 if self._to.file() == 8 else 2
+				new_rook_file = 6 if new_king_file == 7 else 3
+				rank = self._from.rank()
+				board.add_piece(king, Square.fromFileAndRank(new_king_file, rank))
+				board.add_piece(rook, Square.fromFileAndRank(new_rook_file, rank))
+				king.set_has_moved()
+				rook.set_has_moved()
 
 
 class Game:
