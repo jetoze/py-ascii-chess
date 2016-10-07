@@ -364,6 +364,7 @@ class Board:
 			t = Square(parts[1].strip())
 			return Move(f, t)
 		elif "x" in input:
+			# TODO: Add support for pawn captures of the form 'fxe6'
 			ind = input.index("x")
 			move = None
 			if ind == 1:
