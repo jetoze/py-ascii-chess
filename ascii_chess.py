@@ -413,32 +413,7 @@ class Board:
 			t = Square(parts[1].strip())
 			return Move(f, t)
 		elif "x" in input:
-			ind = input.index("x")
-			move = None
-			if ind == 1:
-				if input[:1] in PIECE_TYPES:
-					# 'Nxe5'. Can be handled as 'Ne5'.
-					move = self.parse_move(input[:1] + input[2:], expected_color)
-				else:
-					# Pawn capture, e.g. 'fxe6'
-					# TODO: Add support for en passant
-					target_square = Square(input[2:])
-					pawn_file = input[:1]
-					pawn_rank = target_square.rank() - 1 if expected_color == WHITE else target_square.rank() + 1
-					from_square = Square.fromFileAndRank(pawn_file, pawn_rank)
-					if self.is_pawn(from_square, expected_color):
-						pawn = self.get_piece(from_square)
-						if pawn.is_valid_move(self, from_square, target_square):
-							return Move(from_square, target_square)
-					raise InvalidMoveError("No {} pawn can capture on {}.".format(expected_color, target_square))
-			elif ind == 2:
-				# 'e4xe5'. Can be handled as 'e4 e5'.
-				move = self.parse_move(input.replace("x", " "), expected_color)
-			if move is None:
-				raise InvalidMoveError("Invalid move notation: " + input)
-			if not move.is_capture(self):
-				raise InvalidMoveError("Invalid move. Not a capture.")
-			return move
+			return self.parse_capturing_move(input, expected_color)
 		else:
 			if len(input) == 2:
 				# Input of type 'e4', i.e. a pawn move with only the target square given.
@@ -468,6 +443,39 @@ class Board:
 					return self.parse_move(input[:2] + " " + input[2:], expected_color)
 				else:
 					raise InvalidMoveError("Invalid move notation: " + input)
+
+	def parse_capturing_move(self, input, expected_color):
+		"""Parses moves on the form 'Nxd5', 'fxe6', e4xd5'."""
+		ind = input.index("x")
+		move = None
+		if ind == 1:
+			if input[:1] in PIECE_TYPES:
+				# 'Nxe5'. Can be handled as 'Ne5'.
+				move = self.parse_move(input[:1] + input[2:], expected_color)
+			else:
+				# Pawn capture, e.g. 'fxe6'
+				return self.parse_capturing_pawn_move(input, expected_color)
+		elif ind == 2:
+			# 'e4xd5'. Can be handled as 'e4 e5'.
+			move = self.parse_move(input.replace("x", " "), expected_color)
+		if move is None:
+			raise InvalidMoveError("Invalid move notation: " + input)
+		if not move.is_capture(self):
+			raise InvalidMoveError("Invalid move. Not a capture.")
+		return move
+
+	def parse_capturing_pawn_move(self, input, expected_color):
+		"""Parses moves on the form 'fxe6', 'axb3'."""
+		# TODO: Add support for en passant
+		target_square = Square(input[2:])
+		pawn_file = input[:1]
+		pawn_rank = target_square.rank() - 1 if expected_color == WHITE else target_square.rank() + 1
+		from_square = Square.fromFileAndRank(pawn_file, pawn_rank)
+		if self.is_pawn(from_square, expected_color):
+			pawn = self.get_piece(from_square)
+			if pawn.is_valid_move(self, from_square, target_square):
+				return Move(from_square, target_square)
+		raise InvalidMoveError("No {} pawn can capture on {}.".format(expected_color, target_square))
 
 	def dump(self):
 		print "   ",
