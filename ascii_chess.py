@@ -365,7 +365,13 @@ class Board:
 	def parse_move(self, input, expected_color):
 		# FIXME: This method is in dire need of refactoring!
 		input = input.replace("-", " ") # So that "e4-e5" is handled the same as "e4 e5"
-		if " " in input:
+		if input == "O-O":
+			# TODO: Castle short
+			pass
+		elif input == "O-O-O":
+			# TODO: Castle long
+			pass
+		elif " " in input:
 			parts = input.split(" ")
 			f = Square(parts[0].strip())
 			t = Square(parts[1].strip())
