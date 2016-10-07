@@ -352,7 +352,7 @@ class Board:
 			for f in FILES:
 				sq = Square.fromFileAndRank(f, r)
 				if self.is_empty(sq):
-					print '.',
+					print u'\u00b7', # a center dot
 				else:
 					p = self.get_piece(sq)
 					print p.abbrev(),
