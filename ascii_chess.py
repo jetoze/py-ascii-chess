@@ -261,9 +261,9 @@ class Queen(Piece):
 		rank_diff = to.rank() - start.rank()
 		file_diff = to.file() - start.file()
 		if rank_diff == 0:
-			return horizontal_move_generator(start, to) if (file_diff > 0) else None
+			return horizontal_move_generator(start, to) if (abs(file_diff) > 0) else None
 		if file_diff == 0:
-			return vertical_move_generator(start, to) if (rank_diff > 0) else None
+			return vertical_move_generator(start, to) if (abs(rank_diff) > 0) else None
 		if abs(rank_diff) == abs(file_diff):
 			return diagonal_move_generator(start, to)
 		return None
@@ -322,6 +322,8 @@ class Board:
 		return isinstance(p, Pawn) and p.get_color() == color
 
 	def collect_pieces_of_type_and_color(self, piece_type, color):
+		"""Returns a list of the pieces of the given type and color currently on the board.
+		Each entry in the returned list is a tuple: the first is the Square, the second the Piece."""
 		return [i for i in self._squares.iteritems() if isinstance(i[1], piece_type) and i[1].get_color() == color]
 
 	def setup_initial_position(self):
@@ -354,8 +356,9 @@ class Board:
 		self.add_piece(King(BLACK), Square('e8'))
 
 	def parse_move(self, input, expected_color):
-		if "-" in input:
-			parts = input.split("-")
+		input = input.replace("-", " ") # So that "e4-e5" is handled the same as "e4 e5"
+		if " " in input:
+			parts = input.split(" ")
 			f = Square(parts[0].strip())
 			t = Square(parts[1].strip())
 			return Move(f, t)
@@ -371,6 +374,8 @@ class Board:
 				if len(candidates) == 0:
 					raise ValueError("Invalid move. No {0} {1} can move to {2}".format(expected_color, piece_type.__name__, to_square))
 				elif len(candidates) == 1:
+					# The first [0] to get the single candidate, which is a tuple.
+					# The second [0] to get the first item in the tuple, which is the Square.
 					from_square = candidates[0][0]
 					return Move(from_square, to_square)
 				else:
