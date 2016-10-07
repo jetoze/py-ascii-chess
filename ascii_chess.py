@@ -572,6 +572,14 @@ class Game:
 			elif input == 'b':
 				if interactive:
 					self._board.dump()
+			elif input == 'load':
+				if interactive:
+					file_name = raw_input("Enter file name: ")
+					if len(file_name) == 0:
+						return
+					with open(file_name) as f:
+						for line in (ln.strip() for ln in f if len(ln)):
+							self.handle_input(line, False)
 			else:
 				expected_color = WHITE if (self._half_move % 2) else BLACK
 				move = self._board.parse_move(input, expected_color)
