@@ -356,6 +356,7 @@ class Board:
 		self.add_piece(King(BLACK), Square('e8'))
 
 	def parse_move(self, input, expected_color):
+		# FIXME: This method is in dire need of refactoring!
 		input = input.replace("-", " ") # So that "e4-e5" is handled the same as "e4 e5"
 		if " " in input:
 			parts = input.split(" ")
@@ -391,6 +392,7 @@ class Board:
 					from_square = candidates[0][0]
 					return Move(from_square, to_square)
 				else:
+					# TODO: Add support for moves like 'Ngf4', and 'Ng2f4'.
 					raise ValueError("Ambigous move. More than one {0} {1} can move to {2}".format(expected_color, piece_type.__name__, to_square))
 			else:
 				if len(input) == 4:
@@ -400,7 +402,7 @@ class Board:
 					# Pawn move of the form 'e5', i.e. the input is just the target square, or "e4e5".
 					# We need to figure out which pawn it is.
 					to_square = Square(input)
-					# TODO: Refactor this mess. Identical code structure.
+					# TODO: Refactor this mess. Identical code structure for WHITE and BLACK.
 					if expected_color == WHITE:
 						from_square = Square.fromFileAndRank(to_square.file(), to_square.rank() - 1)
 						if self.is_pawn(from_square, WHITE):
