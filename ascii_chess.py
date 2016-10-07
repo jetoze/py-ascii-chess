@@ -371,6 +371,11 @@ class Board:
 		Each entry in the returned list is a tuple: the first is the Square, the second the Piece."""
 		return [i for i in self._squares.iteritems() if isinstance(i[1], piece_type) and i[1].get_color() == color]
 
+	def clear_en_passant_squares(self):
+		"""Clears the en-passant square for all pawns on the board."""
+		for p in (i[1] for i in self._squares.iteritems() if isinstance(i[1], Pawn)):
+			p.set_en_passant_square(None)
+
 	def setup_initial_position(self):
 		"""Creates a board with the initial position for a game of chess."""
 		self._squares = {}
@@ -511,7 +516,20 @@ class Move:
 			raise ValueError("Illegal move: " + str(self))
 		board.remove_piece(self._from)
 		board.add_piece(piece, self._to)
+		self.check_en_passant(board, piece)
 		piece.set_has_moved()
+
+	def check_en_passant(self, board, piece):
+		board.clear_en_passant_squares()
+		if not isinstance(piece, Pawn):
+			return
+		if abs(self._to.rank() - self._from.rank()) != 2:
+			return
+		# At this point we know a pawn was moved two steps forward.
+		# Pawns of the opposite color on each side of the target square
+		# can now capture en-passant
+		# TODO: Implement me.
+		pass
 
 	def get_piece(self, board, expected_color):
 		if board.is_empty(self._from):
