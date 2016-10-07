@@ -363,17 +363,19 @@ class Board:
 			t = Square(parts[1].strip())
 			return Move(f, t)
 		elif "x" in input:
-			# FIXME: The following is not correct. We also must check that the target square
-			# contains a piece of the opposite color (capture).
 			ind = input.index("x")
+			move = None
 			if ind == 1:
 				# 'Nxe5'. Can be handled as 'Ne5'.
-				return self.parse_move(input[:1] + input[2:], expected_color)
+				move = self.parse_move(input[:1] + input[2:], expected_color)
 			elif ind == 2:
 				# 'e4xe5'. Can be handled as 'e4 e5'.
-				return self.parse_move(input.replace("x", " "), expected_color)
-			else:
+				move = self.parse_move(input.replace("x", " "), expected_color)
+			if move is None:
 				raise ValueError("Invalid move notation: " + input)
+			if not move.is_capture(self):
+				raise ValueError("Invalid move. Not a capture.")
+			return move
 		else:
 			c = input[:1]
 			if c in PIECE_TYPES:
@@ -448,7 +450,6 @@ class Move:
 		board.remove_piece(self._from)
 		board.add_piece(piece, self._to)
 
-
 	def get_piece(self, board, expected_color):
 		if board.is_empty(self._from):
 			raise ValueError("Invalid move. No piece at " + str(self._from))
@@ -456,6 +457,13 @@ class Move:
 		if not p.get_color() == expected_color:
 			raise ValueError("Invalid move. The piece at " + str(self._from) + " is the wrong color.")
 		return p
+
+	def is_capture(self, board):
+		if board.is_empty(self._from) or board.is_empty(self._to):
+			return False
+		p1 = board.get_piece(self._from)
+		p2 = board.get_piece(self._to)
+		return not p1.is_same_color(p2)
 
 	def __str__(self):
 		return str(self._from) + "-" + str(self._to)
