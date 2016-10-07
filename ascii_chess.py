@@ -407,16 +407,16 @@ class Board:
 						from_square = Square.fromFileAndRank(to_square.file(), to_square.rank() - 1)
 						if self.is_pawn(from_square, WHITE):
 							return Move(from_square, to_square)
-						if to_square.rank() == 4 and self.is_empty(Square.fromFileAndRank(to_square.file(), to_square.rank() - 1)):
-							from_square = Square.fromFileAndRank(to_square.file(), to_square.rank() - 2)
+						if to_square.rank() == 4 and self.is_empty(Square.fromFileAndRank(to_square.file(), 3)):
+							from_square = Square.fromFileAndRank(to_square.file(), 2)
 							if self.is_pawn(from_square, WHITE):
 								return Move(from_square, to_square)
 					else:
 						from_square = Square.fromFileAndRank(to_square.file(), to_square.rank() + 1)
 						if self.is_pawn(from_square, BLACK):
 							return Move(from_square, to_square)
-						if to_square.rank() == 5 and self.is_empty(Square.fromFileAndRank(to_square.file(), to_square.rank() + 1)):
-							from_square = Square.fromFileAndRank(to_square.file(), to_square.rank() + 2)
+						if to_square.rank() == 5 and self.is_empty(Square.fromFileAndRank(to_square.file(), 6)):
+							from_square = Square.fromFileAndRank(to_square.file(), 7)
 							if self.is_pawn(from_square, BLACK):
 								return Move(from_square, to_square)
 					raise ValueError("Invalid move. No {0} pawn can reach {1}".format(expected_color, input))
