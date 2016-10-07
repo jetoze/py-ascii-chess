@@ -542,6 +542,9 @@ class Castling(Move):
 			raise InvalidMoveError("Illegal move. The {} King is not standing on {}.".format(expected_color, self._from))
 
 
+class StopError(Exception):
+	pass
+
 class Game:
 
 	def __init__(self):
@@ -554,20 +557,28 @@ class Game:
 		while True:
 			try:
 				input = raw_input("\nEnter a move ('q' to quit, 'b' to print board): ")
-				if input == 'q':
-					break
-				if input == 'b':
+				self.handle_input(input)
+			except ValueError as ve:
+				print str(ve)
+			except InvalidMoveError as ime:
+				print str(ime)
+			except StopError:
+				break
+
+	def handle_input(self, input, interactive = True):
+			if input == 'q':
+				if interactive:
+					raise StopError
+			elif input == 'b':
+				if interactive:
 					self._board.dump()
-					continue
+			else:
 				expected_color = WHITE if (self._half_move % 2) else BLACK
 				move = self._board.parse_move(input, expected_color)
 				move.update_board(self._board, expected_color)
 				self._half_move += 1
 				self._board.dump()
-			except ValueError as ve:
-				print str(ve)
-			except InvalidMoveError as ime:
-				print str(ime)
+
 
 if __name__ == '__main__':
 	game = Game()
