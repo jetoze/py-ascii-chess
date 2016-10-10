@@ -18,11 +18,11 @@ class Square:
 	def __init__(self, coordinate):
 		file = coordinate[:1]
 		if not file in FILES:
-			err = "Not a valid file: '{0}' (requires 'a' to 'h')".format(file)
+			err = "Not a valid file: '{}' (requires 'a' to 'h')".format(file)
 			raise ValueError(err)
 		rank = int(coordinate[1:].strip())
 		if not rank in RANKS:
-			err = "Not a valid rank: {0} (requires 1 to 8)".format(rank)
+			err = "Not a valid rank: {} (requires 1 to 8)".format(rank)
 			raise ValueError(err)
 		self._file = file
 		self._file_no = FILES.index(file) + 1
@@ -47,7 +47,7 @@ class Square:
 		return str(self._file) + str(self._rank)
 
 	def __repr__(self):
-		return "Square('{0}{1}')".format(self._file, self._rank)
+		return "Square('{}{}')".format(self._file, self._rank)
 
 	def __hash__(self):
 		return hash((self._file, self._rank))
@@ -445,18 +445,19 @@ class Board:
 		self.add_piece(King(WHITE), Square('e1'))
 		self.add_piece(King(BLACK), Square('e8'))
 
-	def parse_move(self, input, expected_color):
+	def parse_move(self, input, expected_color, capture = False):
 		# FIXME: This method is in dire need of refactoring!
 		if input == "0-0" or input == "O-O":
 			return Castling.king_side(expected_color)
 		elif input == "0-0-0" or input == "O-O-O":
 			return Castling.queen_side(expected_color)
-		input = input.replace("-", " ") # So that "e4-e5" is handled the same as "e4 e5"
 		if " " in input:
-			parts = input.split(" ")
+			raise InvalidMoveError("Invalid move notation: " + input)
+		if "-" in input:
+			parts = input.split("-")
 			f = Square(parts[0].strip())
 			t = Square(parts[1].strip())
-			return Move(f, t)
+			return Move(f, t, False)
 		elif "x" in input:
 			return self.parse_capturing_move(input, expected_color)
 		else:
@@ -469,23 +470,27 @@ class Board:
 				to_square = Square(input[1:])
 				piece_type = PIECE_TYPES[c]
 				pieces = self.collect_pieces_of_type_and_color(piece_type, expected_color)
-				candidates = [p for p in pieces if p[1].is_valid_move(self, p[0], to_square)]
+				candidates = []
+				for p in pieces:
+					valid = p[1].is_valid_capture if capture else p[1].is_valid_move
+					if valid(self, p[0], to_square):
+						candidates.append(p)
 				if len(candidates) == 0:
-					raise InvalidMoveError("Invalid move. No {0} {1} can move to {2}".format(
-						expected_color, piece_type.__name__, to_square))
+					raise InvalidMoveError("Invalid move. No {} {} can {} {}".format(
+						expected_color, piece_type.__name__, "capture on" if capture else "move to", to_square))
 				elif len(candidates) == 1:
 					# The first [0] to get the single candidate, which is a tuple.
 					# The second [0] to get the first item in the tuple, which is the Square.
 					from_square = candidates[0][0]
-					return Move(from_square, to_square)
+					return Move(from_square, to_square, capture)
 				else:
 					# TODO: Add support for moves like 'Ngf4', and 'Ng2f4'.
-					raise InvalidMoveError("Ambigous move. More than one {0} {1} can move to {2}".format(
+					raise InvalidMoveError("Ambigous move. More than one {} {} can move to {}".format(
 						expected_color, piece_type.__name__, to_square))
 			else:
 				if len(input) == 4:
-					# Pawn move of the form 'e2e4'. We can handle it as 'e2 e4'
-					return self.parse_move(input[:2] + " " + input[2:], expected_color)
+					# Pawn move of the form 'e2e4'. We can handle it as 'e2-e4'
+					return self.parse_move(input[:2] + "-" + input[2:], expected_color, False)
 				else:
 					raise InvalidMoveError("Invalid move notation: " + input)
 
@@ -496,13 +501,13 @@ class Board:
 		if ind == 1:
 			if input[:1] in PIECE_TYPES:
 				# 'Nxe5'. Can be handled as 'Ne5'.
-				move = self.parse_move(input[:1] + input[2:], expected_color)
+				move = self.parse_move(input[:1] + input[2:], expected_color, True)
 			else:
 				# Pawn capture, e.g. 'fxe6'
 				return self.parse_capturing_pawn_move(input, expected_color)
 		elif ind == 2:
-			# 'e4xd5'. Can be handled as 'e4 e5'.
-			move = self.parse_move(input.replace("x", " "), expected_color)
+			# 'e4xd5'. Can be handled as 'e4-e5'.
+			move = self.parse_move(input.replace("x", "-"), expected_color, True)
 		if move is None:
 			raise InvalidMoveError("Invalid move notation: " + input)
 		if not move.is_capture(self):
@@ -518,8 +523,8 @@ class Board:
 		from_square = Square.fromFileAndRank(pawn_file, pawn_rank)
 		if self.is_pawn(from_square, expected_color):
 			pawn = self.get_piece(from_square)
-			if pawn.is_valid_move(self, from_square, target_square):
-				return Move(from_square, target_square)
+			if pawn.is_valid_capture(self, from_square, target_square):
+				return Move(from_square, target_square, True)
 		raise InvalidMoveError("No {} pawn can capture on {}.".format(expected_color, target_square))
 
 	def dump(self):
@@ -555,7 +560,7 @@ class Move:
 		piece = self.get_piece(board, expected_color)
 		valid = piece.is_valid_capture if self._capture else piece.is_valid_move
 		if not valid(board, self._from, self._to):
-			raise ValueError("Illegal {}}: {}".format("capture" if self._capture else "move", self))
+			raise ValueError("Illegal {}: {}".format("capture" if self._capture else "move", self))
 		if self._capture:
 			self.check_en_passant(board, piece)
 		board.remove_piece(self._from)
@@ -610,7 +615,7 @@ class Move:
 		return p
 
 	def is_capture(self, board):
-		if self.is_en_passant():
+		if self.is_en_passant(board):
 			return True
 		if board.is_empty(self._from) or board.is_empty(self._to):
 			return False
@@ -622,7 +627,7 @@ class Move:
 		return str(self._from) + "-" + str(self._to)
 
 	def __repr__(self):
-		return "Move(Square('{0}'), Square('{1}'))".format(self._from, self._to)
+		return "Move(Square('{}'), Square('{}'))".format(self._from, self._to)
 
 
 class Castling(Move):
@@ -630,12 +635,12 @@ class Castling(Move):
 	@staticmethod
 	def king_side(color):
 		rank = 1 if color == WHITE else 8
-		return Castling(Square.fromFileAndRank(5, rank), Square.fromFileAndRank(8, rank))
+		return Castling(Square.fromFileAndRank(5, rank), Square.fromFileAndRank(8, rank), False)
 
 	@staticmethod
 	def queen_side(color):
 		rank = 1 if color == WHITE else 8
-		return Castling(Square.fromFileAndRank(5, rank), Square.fromFileAndRank(1, rank))
+		return Castling(Square.fromFileAndRank(5, rank), Square.fromFileAndRank(1, rank), False)
 	
 	def update_board(self, board, expected_color):
 		if board.is_king(self._from, expected_color):
@@ -661,6 +666,7 @@ class Castling(Move):
 
 class StopError(Exception):
 	pass
+
 
 class Game:
 
