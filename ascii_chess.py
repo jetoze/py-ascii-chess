@@ -611,6 +611,7 @@ class Castling(Move):
 				board.remove_piece(self._to)
 				king.set_has_moved()
 				rook.set_has_moved()
+				board.clear_en_passant_squares()
 			else:
 				raise InvalidMoveError("{} castling is not allowed for {}.".format(
 					"King-side" if self._to.file() == 8 else "Queen-side", expected_color))
