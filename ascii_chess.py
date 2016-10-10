@@ -356,6 +356,8 @@ class Board:
 
 	def __init__(self):
 		self._squares = {}
+		self._white_king = None
+		self._black_king = None
 
 	@staticmethod
 	def initial_position():
@@ -442,8 +444,10 @@ class Board:
 		self.add_piece(Queen(WHITE), Square('d1'))
 		self.add_piece(Queen(BLACK), Square('d8'))
 		# And lastly the Kings:
-		self.add_piece(King(WHITE), Square('e1'))
-		self.add_piece(King(BLACK), Square('e8'))
+		self._white_king = Square('e1')
+		self.add_piece(King(WHITE), self._white_king)
+		self._black_king = Square('e8')
+		self.add_piece(King(BLACK), self._black_king)
 
 	def parse_move(self, input, expected_color, capture = False):
 		# FIXME: This method is in dire need of refactoring!
@@ -568,6 +572,7 @@ class Move:
 		if not self._capture:
 			self.update_en_passant_squares(board, piece)
 		piece.set_has_moved()
+		self.update_king_position(board, piece)
 
 	def is_en_passant(self, board):
 		# XXX: It would be nicer to use a sub-class for en-passant, just like we do for
@@ -605,6 +610,12 @@ class Move:
 				p = board.get_piece(sq)
 				p.set_en_passant_square(target_square)
 
+	def update_king_position(self, board, piece):
+		if isinstance(piece, King):
+			if piece.is_white():
+				board._white_king = self._to
+			else:
+				board._black_king = self._to
 
 	def get_piece(self, board, expected_color):
 		if board.is_empty(self._from):
@@ -657,6 +668,7 @@ class Castling(Move):
 				king.set_has_moved()
 				rook.set_has_moved()
 				board.clear_en_passant_squares()
+				self.update_king_position(board, king)
 			else:
 				raise InvalidMoveError("{} castling is not allowed for {}.".format(
 					"King-side" if self._to.file() == 8 else "Queen-side", expected_color))
