@@ -123,22 +123,36 @@ class Piece:
 
 	def is_valid_move(self, board, start, to):
 		"""Checks if suggested move is valid for this piece, on the given chess board. from and to
-		are the current square and the destination square, respectively."""
+		are the current square and the destination square, respectively. Only non-capturing moves
+		are considered, i.e. this method will return False if the target square is occupied by
+		another piece."""
+		if not board.is_empty(to):
+			return False
 		moves = self.move_generator(start, to)
 		if moves is None:
 			return False
 		for sq in moves:
-			if board.is_empty(sq):
-				continue
-			# The move is allowed only if sq == to, and it is occupied by a piece
-			# of the opposite color
-			if sq != to:
-				# There is a piece in the way, blocking us.
+			if not board.is_empty(sq):
 				return False
-			else:
-				other_piece = board.get_piece(sq)
-				return not other_piece.is_same_color(self)
-		return True
+			if sq == to:
+				return True
+		return False
+
+def is_valid_capture(self, board, start, to):
+	"""Checks if the suggested move is a valid capturing move for this piece. from and to
+	are the current square and the destination square, respectively. The target square must
+	be occupied by a piece of the opposite color for this method to return True."""
+	if not board.is_piece_of_opposite_color(to, self):
+		return False
+	moves = self.move_generator(start, to)
+	if moves is None:
+		return False
+	for sq in moves:
+		# If we encounter a piece before we reach the target square, the capture
+		# is blocked.
+		if not board.is_empty(sq):
+			return sq == to
+	return False
 
 
 class Pawn(Piece):
@@ -148,8 +162,8 @@ class Pawn(Piece):
 		self._en_passant = None
 
 	def is_valid_move(self, board, start, to):
-		if (self._en_passant is not None) and (to == self._en_passant):
-			return True
+		if not board.is_empty(to):
+			return False
 		from_rank = start.rank()
 		to_rank = to.rank()
 		rank_diff = to_rank - from_rank
@@ -184,6 +198,14 @@ class Pawn(Piece):
 				return rank_diff == 1
 			else:
 				return rank_diff == -1
+
+	def is_valid_capture(self, board, start, to):
+		if (self._en_passant is not None) and (to == self._en_passant):
+			return True
+		if not board.is_piece_of_opposite_color(to, self):
+			return False
+		req_rank_diff = 1 if self.is_white() else -1
+		return (to.rank() - start.rank() == req_rank_diff) and (abs(to.file() - start.file()) == 1)
 
 	def set_en_passant_square(self, square):
 		"""Sets a square that is an allowed target for an en passant move for this pawn, if any."""
@@ -225,6 +247,12 @@ class Knight(Piece):
 		Piece.__init__(self, 'knight', 'n', 3, color)
 
 	def is_valid_move(self, board, start, to):
+		return self.is_valid_move_or_capture(board, start, to, False)
+
+	def is_valid_capture(self, board, start, to):
+		return self.is_valid_move_or_capture(board, start, to, True)
+
+	def is_valid_move_or_capture(self, board, start, to, capture):
 		file_diff = abs(to.file() - start.file())
 		rank_diff = abs(to.rank() - start.rank())
 		if file_diff == 1:
@@ -237,12 +265,9 @@ class Knight(Piece):
 			return False
 		# At this point we've verified that the move fulfills the rule for how
 		# Knights move on the board. Now we just need to verify that the end square
-		# is either empty or occupied by a piece of the opposite color.
-		if board.is_empty(to):
-			return True
-		else:
-			other_piece = board.get_piece(to)
-			return not other_piece.is_same_color(self)
+		# is either empty or occupied by a piece of the opposite color, depending on
+		# the capture flag.
+		return board.is_piece_of_opposite_color(to, self) if capture else board.is_empty(to)
 
 	def move_generator(self, start, to):
 		return None
@@ -302,6 +327,13 @@ class King(Piece):
 		if rook.has_moved():
 			return False
 		return self.is_path_clear_for_castling(board, rank, to.file())
+
+	def is_valid_capture(self, board, start, to):
+		if start == to:
+			return False
+		if abs(to.file() - start.file()) <= 1 and abs(to.rank() - start.rank()) <= 1:
+			return board.is_piece_of_opposite_color(to, self)
+		return False
 
 	def is_path_clear_for_castling(self, board, rank, end_file):
 		start_file = 5
@@ -369,6 +401,10 @@ class Board:
 	def is_any_pawn(self, square):
 		"""Checks if a pawn of any color is standing on the given square."""
 		return not self.is_empty(square) and isinstance(self.get_piece(square), Pawn)
+
+	def is_piece_of_opposite_color(self, square, piece):
+		"""Checks if a piece of the opposite color than the given piece is standing on the given square."""
+		return not self.is_empty(square) and not self.get_piece(square).is_same_color(piece)
 
 	def collect_pieces_of_type_and_color(self, piece_type, color):
 		"""Returns a list of the pieces of the given type and color currently on the board.
