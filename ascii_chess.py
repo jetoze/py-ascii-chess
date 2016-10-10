@@ -546,18 +546,22 @@ class Board:
 
 class Move:
 
-	def __init__(self, from_square, to_square):
+	def __init__(self, from_square, to_square, capture):
 		self._from = from_square
 		self._to = to_square
+		self._capture = capture
 
 	def update_board(self, board, expected_color):
 		piece = self.get_piece(board, expected_color)
-		if not piece.is_valid_move(board, self._from, self._to):
-			raise ValueError("Illegal move: " + str(self))
-		self.check_en_passant(board, piece)
+		valid = piece.is_valid_capture if self._capture else piece.is_valid_move
+		if not valid(board, self._from, self._to):
+			raise ValueError("Illegal {}}: {}".format("capture" if self._capture else "move", self))
+		if self._capture:
+			self.check_en_passant(board, piece)
 		board.remove_piece(self._from)
 		board.add_piece(piece, self._to)
-		self.update_en_passant_squares(board, piece)
+		if not self._capture:
+			self.update_en_passant_squares(board, piece)
 		piece.set_has_moved()
 
 	def is_en_passant(self, board):
