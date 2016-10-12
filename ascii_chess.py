@@ -359,6 +359,14 @@ class Board:
 		b.setup_initial_position()
 		return b
 
+	def save_state(self):
+		return (self._squares.copy(), self._white_king, self._black_king)
+
+	def restore_state(self, state):
+		self._squares = state[0].copy()
+		self._white_king = state[1]
+		self._black_king = state[2]
+
 	def add_piece(self, p, s):
 		"""Adds the piece p to the square s."""
 		self._squares[s] = p
@@ -565,6 +573,7 @@ class Move:
 		self._capture = capture
 
 	def update_board(self, board, expected_color):
+		state = board.save_state()
 		piece = self.get_piece(board, expected_color)
 		valid = piece.is_valid_capture if self._capture else piece.is_valid_move
 		if not valid(board, self._from, self._to):
@@ -573,10 +582,13 @@ class Move:
 			self.check_en_passant(board, piece)
 		board.remove_piece(self._from)
 		board.add_piece(piece, self._to)
+		self.update_king_position(board, piece)
+		if board.is_king_in_check(expected_color):
+			board.restore_state(state)
+			raise InvalidMoveError("Invalid move: {}'s King is in check.".format(expected_color))
 		if not self._capture:
 			self.update_en_passant_squares(board, piece)
 		piece.set_has_moved()
-		self.update_king_position(board, piece)
 
 	def is_en_passant(self, board):
 		# XXX: It would be nicer to use a sub-class for en-passant, just like we do for
