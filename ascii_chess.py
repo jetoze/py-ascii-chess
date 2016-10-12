@@ -402,6 +402,16 @@ class Board:
 		"""Checks if a piece of the opposite color than the given piece is standing on the given square."""
 		return not self.is_empty(square) and not self.get_piece(square).is_same_color(piece)
 
+	def is_king_in_check(self, color):
+		square = self._white_king if color == WHITE else self._black_king
+		if square is None:
+			return False
+		for i in self._squares.iteritems():
+			piece = i[1]
+			if piece.get_color() != color and piece.is_covering_square(self, i[0], square):
+				return True
+		return False
+
 	def collect_pieces_of_type_and_color(self, piece_type, color):
 		"""Returns a list of the pieces of the given type and color currently on the board.
 		Each entry in the returned list is a tuple: the first is the Square, the second the Piece."""
