@@ -142,16 +142,19 @@ def is_valid_capture(self, board, start, to):
 	"""Checks if the suggested move is a valid capturing move for this piece. from and to
 	are the current square and the destination square, respectively. The target square must
 	be occupied by a piece of the opposite color for this method to return True."""
-	if not board.is_piece_of_opposite_color(to, self):
-		return False
-	moves = self.move_generator(start, to)
+	return self.is_covering_square(board, start, to) and board.is_piece_of_opposite_color(to, self)
+
+def is_covering_square(self, board, square, target):
+	"""Checks if this piece is covering the given target, when standing on the given square on 
+	the given board."""
+	moves = self.move_generator(square, target)
 	if moves is None:
 		return False
 	for sq in moves:
 		# If we encounter a piece before we reach the target square, the capture
 		# is blocked.
 		if not board.is_empty(sq):
-			return sq == to
+			return sq == target
 	return False
 
 
@@ -202,10 +205,11 @@ class Pawn(Piece):
 	def is_valid_capture(self, board, start, to):
 		if (self._en_passant is not None) and (to == self._en_passant):
 			return True
-		if not board.is_piece_of_opposite_color(to, self):
-			return False
+		return self.is_covering_square(board, start, to) and board.is_piece_of_opposite_color(to, self)
+
+	def is_covering_square(self, board, square, target):
 		req_rank_diff = 1 if self.is_white() else -1
-		return (to.rank() - start.rank() == req_rank_diff) and (abs(to.file() - start.file()) == 1)
+		return (target.rank() - square.rank() == req_rank_diff) and (abs(target.file() - square.file()) == 1)
 
 	def set_en_passant_square(self, square):
 		"""Sets a square that is an allowed target for an en passant move for this pawn, if any."""
@@ -247,14 +251,11 @@ class Knight(Piece):
 		Piece.__init__(self, 'knight', 'n', 3, color)
 
 	def is_valid_move(self, board, start, to):
-		return self.is_valid_move_or_capture(board, start, to, False)
+		return self.is_covering_square(board, start, to) and board.is_empty(to)
 
-	def is_valid_capture(self, board, start, to):
-		return self.is_valid_move_or_capture(board, start, to, True)
-
-	def is_valid_move_or_capture(self, board, start, to, capture):
-		file_diff = abs(to.file() - start.file())
-		rank_diff = abs(to.rank() - start.rank())
+	def is_covering_square(self, board, square, target):
+		file_diff = abs(target.file() - square.file())
+		rank_diff = abs(target.rank() - square.rank())
 		if file_diff == 1:
 			if rank_diff != 2:
 				return False
@@ -263,11 +264,7 @@ class Knight(Piece):
 				return False
 		else:
 			return False
-		# At this point we've verified that the move fulfills the rule for how
-		# Knights move on the board. Now we just need to verify that the end square
-		# is either empty or occupied by a piece of the opposite color, depending on
-		# the capture flag.
-		return board.is_piece_of_opposite_color(to, self) if capture else board.is_empty(to)
+		return True		
 
 	def move_generator(self, start, to):
 		return None
@@ -329,11 +326,12 @@ class King(Piece):
 		return self.is_path_clear_for_castling(board, rank, to.file())
 
 	def is_valid_capture(self, board, start, to):
-		if start == to:
+		return self.is_covering_square(board, start, to) and board.is_piece_of_opposite_color(to, self)
+
+	def is_covering_square(self, board, square, target):
+		if square == target:
 			return False
-		if abs(to.file() - start.file()) <= 1 and abs(to.rank() - start.rank()) <= 1:
-			return board.is_piece_of_opposite_color(to, self)
-		return False
+		return abs(target.file() - square.file()) <= 1 and abs(target.rank() - square.rank()) <= 1
 
 	def is_path_clear_for_castling(self, board, rank, end_file):
 		start_file = 5
@@ -344,7 +342,6 @@ class King(Piece):
 			if not board.is_empty(sq):
 				return False
 		return True
-
 
 	def move_generator(self, start, to):
 		return None
