@@ -126,17 +126,7 @@ class Piece:
 		are the current square and the destination square, respectively. Only non-capturing moves
 		are considered, i.e. this method will return False if the target square is occupied by
 		another piece."""
-		if not board.is_empty(to):
-			return False
-		moves = self.move_generator(start, to)
-		if moves is None:
-			return False
-		for sq in moves:
-			if not board.is_empty(sq):
-				return False
-			if sq == to:
-				return True
-		return False
+		return self.is_covering_square(board, start, to) and board.is_empty(to)
 
 	def is_valid_capture(self, board, start, to):
 		"""Checks if the suggested move is a valid capturing move for this piece. from and to
@@ -153,8 +143,10 @@ class Piece:
 		for sq in moves:
 			# If we encounter a piece before we reach the target square, the capture
 			# is blocked.
+			if sq == target:
+				return True
 			if not board.is_empty(sq):
-				return sq == target
+				break
 		return False
 
 
@@ -249,9 +241,6 @@ class Knight(Piece):
 
 	def __init__(self, color):
 		Piece.__init__(self, 'knight', 'n', 3, color)
-
-	def is_valid_move(self, board, start, to):
-		return self.is_covering_square(board, start, to) and board.is_empty(to)
 
 	def is_covering_square(self, board, square, target):
 		file_diff = abs(target.file() - square.file())
