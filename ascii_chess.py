@@ -698,7 +698,7 @@ class Game:
 		self._board.dump()
 		while True:
 			try:
-				input = raw_input("\nEnter a move ('q' to quit, 'b' to print board): ")
+				input = raw_input("\nEnter a move for {} ('q' to quit, 'b' to print board): ".format(self.side_to_move()))
 				self.handle_input(input)
 			except ValueError as ve:
 				print str(ve)
@@ -717,26 +717,35 @@ class Game:
 			elif input == 'load':
 				if interactive:
 					file_name = raw_input("Enter file name: ")
-					if len(file_name) == 0:
-						return
-					with open(file_name) as f:
-						for line in (ln.strip() for ln in f if len(ln)):
-							print line,
-							if " " in line:
-								moves = line.split(" ")
-								self.handle_input(moves[0], False, False)
-								self.handle_input(moves[1], False, False)
-							else:
-								self.handle_input(line, False, False)
-					print '\n'
-					self._board.dump()
+					if len(file_name):
+						self.load_file(file_name)
 			else:
-				expected_color = WHITE if (self._half_move % 2) else BLACK
+				expected_color = self.side_to_move()
 				move = self._board.parse_move(input, expected_color)
 				move.update_board(self._board, expected_color)
 				self._half_move += 1
 				if print_board:
 					self._board.dump()
+
+	def load_file(self, file_name):
+		try:
+			with open(file_name) as f:
+				for line in (ln.strip() for ln in f if len(ln)):
+					print line,
+					if " " in line:
+						moves = line.split(" ")
+						self.handle_input(moves[0], False, False)
+						self.handle_input(moves[1], False, False)
+					else:
+						self.handle_input(line, False, False)
+			print '\n'
+			self._board.dump()
+		except IOError as err:
+			print err
+
+	def side_to_move(self):
+		"""Returns WHITE or BLACK depending on which side is to move."""
+		return WHITE if (self._half_move % 2) else BLACK
 
 
 if __name__ == '__main__':
