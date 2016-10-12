@@ -117,10 +117,6 @@ class Piece:
 		"""Checks if this piece has moved."""
 		return self._has_moved
 
-	@abstractmethod
-	def move_generator(self, board, start, to):
-		pass
-
 	def is_valid_move(self, board, start, to):
 		"""Checks if suggested move is valid for this piece, on the given chess board. from and to
 		are the current square and the destination square, respectively. Only non-capturing moves
@@ -148,6 +144,10 @@ class Piece:
 			if not board.is_empty(sq):
 				break
 		return False
+
+	@abstractmethod
+	def move_generator(self, board, start, to):
+		pass
 
 
 class Pawn(Piece):
