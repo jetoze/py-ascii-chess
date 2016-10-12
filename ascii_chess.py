@@ -662,6 +662,8 @@ class Castling(Move):
 		if board.is_king(self._from, expected_color):
 			king = board.get_piece(self._from)
 			if king.is_valid_move(board, self._from, self._to):
+				if board.is_king_in_check(expected_color):
+					raise InvalidMoveError("Castling is not allowed since the King is in check")
 				rook = board.get_piece(self._to)
 				new_king_file = 7 if self._to.file() == 8 else 3
 				new_rook_file = 6 if new_king_file == 7 else 4
