@@ -138,24 +138,24 @@ class Piece:
 				return True
 		return False
 
-def is_valid_capture(self, board, start, to):
-	"""Checks if the suggested move is a valid capturing move for this piece. from and to
-	are the current square and the destination square, respectively. The target square must
-	be occupied by a piece of the opposite color for this method to return True."""
-	return self.is_covering_square(board, start, to) and board.is_piece_of_opposite_color(to, self)
+	def is_valid_capture(self, board, start, to):
+		"""Checks if the suggested move is a valid capturing move for this piece. from and to
+		are the current square and the destination square, respectively. The target square must
+		be occupied by a piece of the opposite color for this method to return True."""
+		return self.is_covering_square(board, start, to) and board.is_piece_of_opposite_color(to, self)
 
-def is_covering_square(self, board, square, target):
-	"""Checks if this piece is covering the given target, when standing on the given square on 
-	the given board."""
-	moves = self.move_generator(square, target)
-	if moves is None:
+	def is_covering_square(self, board, square, target):
+		"""Checks if this piece is covering the given target, when standing on the given square on 
+		the given board."""
+		moves = self.move_generator(square, target)
+		if moves is None:
+			return False
+		for sq in moves:
+			# If we encounter a piece before we reach the target square, the capture
+			# is blocked.
+			if not board.is_empty(sq):
+				return sq == target
 		return False
-	for sq in moves:
-		# If we encounter a piece before we reach the target square, the capture
-		# is blocked.
-		if not board.is_empty(sq):
-			return sq == target
-	return False
 
 
 class Pawn(Piece):
@@ -324,9 +324,6 @@ class King(Piece):
 		if rook.has_moved():
 			return False
 		return self.is_path_clear_for_castling(board, rank, to.file())
-
-	def is_valid_capture(self, board, start, to):
-		return self.is_covering_square(board, start, to) and board.is_piece_of_opposite_color(to, self)
 
 	def is_covering_square(self, board, square, target):
 		if square == target:
